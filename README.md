@@ -8,6 +8,18 @@ Open [dist/index.html](dist/index.html) in a modern browser after building. This
 
 The initial project includes example networks and VLANs; all fields are editable.
 
+## First-Visit Tour
+
+The welcome dialog appears on the first visit. **Start tour** walks through the calculator input, VLSM splitter, overlap checker, VLAN editor, and CSV export, switching tabs and highlighting each target. The tour never modifies your project data.
+
+- Use **Back**, **Next**, and **Finish**, or the arrow keys, to navigate. **Skip**, the close button, and **Esc** dismiss the tour.
+- Finishing or dismissing stores `tour_completed=true` in local storage, independently of **Save on this device**. It does not repeat on reload unless browser storage is cleared or unavailable.
+- **Take the tour again** in the header reopens the welcome dialog at any time.
+- **Load example** in the header restores the prefilled office network after confirmation. The confirmation includes **Back up current** so you can export your existing project before replacing it.
+- Tooltips stay within the viewport, docking below the highlighted area on small screens. The modal keeps keyboard focus within the tour and returns it to the replay button on close.
+
+If local storage is blocked, the tour still works and closes normally, but its dismissal cannot be remembered across reloads. The app shows a warning in that case.
+
 ## Development
 
 Requires Node.js 20.19+ or 22.12+ and npm.
@@ -67,11 +79,14 @@ Limits: 256 VLSM requirements, 256 overlap entries, 512 VLAN rows, 100-character
 
 The packaged HTML was also checked in Chromium for calculator conversion and errors, VLSM editing, overlap conflicts, VLAN editing and undo, CSV/JSON export content, import restoration and rejection, local persistence, keyboard tab navigation, and responsive layouts at desktop, tablet, and mobile widths. Other browser engines have not been separately verified.
 
+Onboarding was checked for first-visit display, finish/skip persistence, replay, Back/Next and arrow navigation, Escape dismissal, focus restoration, preservation of edited inputs, example-loading confirmation, and blocked-storage handling. All five spotlight steps were checked at desktop, tablet, narrow mobile, and landscape sizes.
+
 ## Structure
 
 - [src/network.js](src/network.js): IPv4 calculations and network validation, using `ipaddr.js` for address parsing and classification.
 - [src/project.js](src/project.js): Zod project schema, sample data, and JSON/CSV serialization.
 - [src/main.jsx](src/main.jsx): React interface and browser file/storage integration.
+- [src/Tour.jsx](src/Tour.jsx): Lightweight native-dialog tour, step definitions, spotlight positioning, and keyboard navigation.
 - [src/styles.css](src/styles.css): Responsive light theme, DM Sans / IBM Plex Mono typography, and semantic status colors.
 - [tests/network.test.js](tests/network.test.js): Core regression tests.
 - [vite.config.js](vite.config.js): Single-file production packaging.

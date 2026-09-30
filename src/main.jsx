@@ -14,6 +14,7 @@ import '@fontsource/ibm-plex-mono/latin-500.css';
 import './styles.css';
 import { subnet, parseCIDR, prefixToMask, maskToPrefix, allocateVLSM, findOverlaps, validateVLANs, formatNumber } from './network.js';
 import { createProject, importProject, exportProject, exportCSV } from './project.js';
+import Tour, { TOUR_STEPS, shouldShowTour } from './Tour.jsx';
 
 const STORAGE_KEY = 'subnet-vlan-planner-v1';
 const tabs = [
@@ -98,7 +99,7 @@ function CalculatorView({ data, update, addOverlap, addVLAN, notify }) {
     <div className="calculator-layout">
       <section className="input-pane" aria-labelledby="network-input-heading">
         <div className="section-title"><h2 id="network-input-heading">Network input</h2><IconButton icon={RotateCcw} label="Reset calculator" onClick={() => update(createProject().calculator)} /></div>
-        <Field label="IP address" className="mono-input" value={data.ip} spellCheck={false} autoComplete="off" onChange={(event) => change('ip', event.target.value)} placeholder="192.168.10.24" />
+        <Field data-tour="calculator-input" label="IP address" className="mono-input" value={data.ip} spellCheck={false} autoComplete="off" onChange={(event) => change('ip', event.target.value)} placeholder="192.168.10.24" />
         <fieldset className="mode-control"><legend>Subnet format</legend><div className="segmented">{['cidr', 'mask'].map((mode) => <button key={mode} type="button" aria-pressed={data.mode === mode} className={data.mode === mode ? 'selected' : ''} onClick={() => change('mode', mode)}>{mode === 'cidr' ? 'CIDR prefix' : 'Subnet mask'}</button>)}</div></fieldset>
         {data.mode === 'cidr' ? <div className="prefix-field"><Field label="Prefix length" className="mono-input" type="number" min="0" max="32" value={data.prefix} onChange={(event) => change('prefix', event.target.value)} /><span className="prefix-slash">/</span></div> : <Field label="Subnet mask" className="mono-input" value={data.mask} spellCheck={false} onChange={(event) => change('mask', event.target.value)} placeholder="255.255.255.0" />}
         <div className="conversion"><span>{data.mode === 'cidr' ? 'Subnet mask' : 'CIDR prefix'}</span><code>{result ? (data.mode === 'cidr' ? result.mask : `/${result.prefix}`) : '--'}</code></div>
@@ -133,7 +134,7 @@ function VLSMView({ data, update, addOverlap }) {
   return <>
     <div className="page-heading"><div><div className="eyebrow">ADDRESS ALLOCATION</div><h1>VLSM splitter</h1></div><Badge>Largest first</Badge></div>
     <div className="splitter-layout">
-      <section className="input-pane"><h2>Subnet requirements</h2><Field label="Parent network" className="mono-input" value={data.parent} onChange={(event) => update({ ...data, parent: event.target.value })} spellCheck={false} />
+      <section className="input-pane"><h2>Subnet requirements</h2><Field data-tour="vlsm-input" label="Parent network" className="mono-input" value={data.parent} onChange={(event) => update({ ...data, parent: event.target.value })} spellCheck={false} />
         <div className="request-labels"><span>Subnet name</span><span>Hosts needed</span></div>
         <div className="request-list">{data.requests.map((row, index) => <div className="request-row" key={row.key}>
           <input aria-label={`Subnet ${index + 1} name`} value={row.name} maxLength={2000} onChange={(event) => updateRow(row.key, 'name', event.target.value)} placeholder={`Subnet ${index + 1}`} />
@@ -164,7 +165,7 @@ function OverlapsView({ rows, update }) {
   const conflictIndexes = new Set(conflicts.flatMap((conflict) => [conflict.left, conflict.right]));
   function change(rowKey, field, value) { update(rows.map((row) => row.key === rowKey ? { ...row, [field]: value } : row)); }
   return <>
-    <div className="page-heading"><div><div className="eyebrow">NETWORK VALIDATION</div><h1>Overlap checker</h1></div><Button icon={Plus} className="primary" disabled={rows.length >= 256} onClick={() => update([...rows, { key: key(), name: '', cidr: '' }])}>Add subnet</Button></div>
+    <div className="page-heading"><div><div className="eyebrow">NETWORK VALIDATION</div><h1>Overlap checker</h1></div><Button data-tour="overlap-input" icon={Plus} className="primary" disabled={rows.length >= 256} onClick={() => update([...rows, { key: key(), name: '', cidr: '' }])}>Add subnet</Button></div>
     <div className="summary-strip"><Metric label="SUBNETS" value={rows.length} /><Metric label="OVERLAPPING PAIRS" value={conflicts.length} tone={conflicts.length ? 'red' : 'green'} /><Metric label="INVALID ENTRIES" value={errors} tone={errors ? 'amber' : ''} /></div>
     {!rows.length ? <div className="empty-state"><ScanLine size={36} /><h2>No subnets yet</h2><Button icon={Plus} onClick={() => update([{ key: key(), name: '', cidr: '' }])}>Add subnet</Button></div> : <>
       <div className="table-scroll"><table className="overlap-table"><thead><tr><th>Subnet name</th><th>Network / CIDR</th><th>Normalized network</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{parsed.map((row, index) => <tr key={row.key} className={conflictIndexes.has(index) ? 'conflict-row' : ''}>
@@ -193,12 +194,12 @@ function VLANView({ rows, update, downloadCSV, addVLAN, notify }) {
     notify(`VLAN ${row.vlanId || '(draft)'} deleted.`, 'success', () => update((current) => current.length >= 512 || current.some((item) => item.key === row.key) ? current : [...current, row]));
   }
   return <>
-    <div className="page-heading"><div><div className="eyebrow">SEGMENTATION INVENTORY</div><h1>VLAN table</h1></div><div className="actions"><Button icon={FileSpreadsheet} disabled={Boolean(invalid) || !rows.length} onClick={downloadCSV}>Export CSV</Button><Button icon={Plus} className="primary" disabled={rows.length >= 512} onClick={() => { setQuery(''); addVLAN(''); }}>Add VLAN</Button></div></div>
+    <div className="page-heading"><div><div className="eyebrow">SEGMENTATION INVENTORY</div><h1>VLAN table</h1></div><div className="actions"><Button data-tour="csv-export" icon={FileSpreadsheet} disabled={Boolean(invalid) || !rows.length} onClick={downloadCSV}>Export CSV</Button><Button icon={Plus} className="primary" disabled={rows.length >= 512} onClick={() => { setQuery(''); addVLAN(''); }}>Add VLAN</Button></div></div>
     <div className="summary-strip"><Metric label="TOTAL VLANS" value={rows.length} /><Metric label="ACTIVE" value={rows.filter((row) => row.active).length} tone="green" /><Metric label="NEEDS ATTENTION" value={invalid} tone={invalid ? 'amber' : ''} /></div>
     <div className="table-toolbar"><div className="search-field"><input type="search" aria-label="Search VLANs" placeholder="Search VLANs..." value={query} onChange={(event) => setQuery(event.target.value)} /></div><span className="muted">{visible.length} of {rows.length} VLANs</span></div>
     {invalid > 0 && <Notice tone="warning">{invalid} {invalid === 1 ? 'row needs' : 'rows need'} attention before CSV export. JSON backups retain unfinished rows.</Notice>}
     {overlaps.length > 0 && <Notice tone="warning">{overlaps.length} overlapping VLAN subnet {overlaps.length === 1 ? 'pair' : 'pairs'} detected, including inactive VLANs.</Notice>}
-    <div className="table-scroll"><table className="vlan-table"><thead><tr><th>VLAN ID</th><th>Name</th><th>Subnet / CIDR</th><th>Description</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{visible.map(({ row, index }) => <tr key={row.key}>
+    <div className="table-scroll" data-tour="vlan-editor"><table className="vlan-table"><thead><tr><th>VLAN ID</th><th>Name</th><th>Subnet / CIDR</th><th>Description</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{visible.map(({ row, index }) => <tr key={row.key}>
       <td><input aria-label={`VLAN ${index + 1} ID`} type="number" min="1" max="4094" className="mono" value={row.vlanId} aria-invalid={Boolean(errors[index].vlanId)} onChange={(event) => change(row.key, 'vlanId', event.target.value)} />{errors[index].vlanId && <span className="field-error">{errors[index].vlanId}</span>}</td>
       <td><input aria-label={`VLAN ${index + 1} name`} value={row.name} maxLength={2000} aria-invalid={Boolean(errors[index].name)} onChange={(event) => change(row.key, 'name', event.target.value)} placeholder="VLAN name" />{errors[index].name && <span className="field-error">{errors[index].name}</span>}</td>
       <td><input aria-label={`VLAN ${index + 1} subnet`} className="mono" value={row.cidr} aria-invalid={Boolean(errors[index].cidr)} onChange={(event) => change(row.key, 'cidr', event.target.value)} spellCheck={false} placeholder="10.0.0.0/24" />{errors[index].cidr ? <span className="field-error">{errors[index].cidr}</span> : parseCIDR(row.cidr).cidr !== row.cidr.trim() && <span className="field-hint">Network: {parseCIDR(row.cidr).cidr}</span>}</td>
@@ -221,6 +222,8 @@ function App() {
   const fileInput = useRef(null);
   const confirmation = useRef(null);
   const [pendingImport, setPendingImport] = useState(null);
+  const [tourStep, setTourStep] = useState(() => shouldShowTour() ? -1 : null);
+  const [loadingExample, setLoadingExample] = useState(false);
   const notify = (message, tone = 'success', undo) => setNotification({ message, tone, undo });
 
   useEffect(() => {
@@ -239,6 +242,20 @@ function App() {
   }, []);
 
   function selectTab(next) { setTab(next); history.replaceState(null, '', `#${next}`); }
+  function navigateTour(step) {
+    selectTab(TOUR_STEPS[step].tab);
+    setTourStep(step);
+  }
+  function finishTour() {
+    setTourStep(null);
+    try { localStorage.setItem('tour_completed', 'true'); }
+    catch { notify('Tour closed. Your browser blocked saving the tour preference, so it may appear again on reload.', 'error'); }
+  }
+  function loadExample() {
+    setLoadingExample(true);
+    setPendingImport(createProject());
+    confirmation.current.showModal();
+  }
   function updateSection(section, value) {
     setProject((current) => ({ ...current, [section]: typeof value === 'function' ? value(current[section]) : value }));
   }
@@ -291,6 +308,7 @@ function App() {
     try {
       if (file.size > 2_000_000) throw new Error('Project file exceeds the 2 MB limit.');
       const imported = importProject(await file.text());
+      setLoadingExample(false);
       setPendingImport(imported);
       confirmation.current.showModal();
     } catch (error) { notify(error.message, 'error'); }
@@ -308,7 +326,7 @@ function App() {
   }
   return <>
     <a className="skip-link" href="#workspace">Skip to workspace</a>
-    <header className="app-header"><div className="header-inner"><a className="brand" href="#calculator" onClick={() => selectTab('calculator')} aria-label="Subnet VLAN Planner home"><span className="brand-symbol"><Network size={23} /></span><span>subnet<span className="brand-divider">/</span><span className="brand-light">planner</span></span><span className="version-label">IPv4</span></a><div className="header-status"><span className="status-dot" />Local workspace<span className="header-rule" /><ShieldCheck size={16} /><span>No account required</span></div></div></header>
+    <header className="app-header"><div className="header-inner"><a className="brand" href="#calculator" onClick={() => selectTab('calculator')} aria-label="Subnet VLAN Planner home"><span className="brand-symbol"><Network size={23} /></span><span>subnet<span className="brand-divider">/</span><span className="brand-light">planner</span></span><span className="version-label">IPv4</span></a><div className="header-actions"><div className="header-status"><span className="status-dot" />Local workspace</div><Button icon={Network} onClick={loadExample}>Load example</Button><Button id="replay-tour" icon={CircleHelp} onClick={() => setTourStep(-1)}>Take the tour again</Button></div></div></header>
     <div className="app-shell">
       <div className="project-bar"><div className="project-identity"><div className="project-icon"><Network size={18} /></div><div><label className="small-label" htmlFor="project-name">PROJECT</label><input id="project-name" aria-label="Project name" className="project-name" value={project.name} maxLength={100} onChange={(event) => setProject({ ...project, name: event.target.value })} onBlur={() => { if (!project.name.trim()) setProject({ ...project, name: 'Untitled network' }); }} /></div></div><div className="actions"><Button icon={Upload} onClick={() => fileInput.current.click()}>Import project</Button><Button icon={Download} onClick={saveJSON}>Export JSON</Button><input className="sr-only" type="file" accept=".json,application/json" aria-label="Import project file" ref={fileInput} onChange={readImport} tabIndex={-1} /></div></div>
       <nav className="tab-bar" role="tablist" aria-label="Network planning tools">{tabs.map(({ id, name, icon: Icon }, index) => <button key={id} id={`tab-${id}`} role="tab" aria-selected={tab === id} aria-controls="workspace" tabIndex={tab === id ? 0 : -1} onClick={() => selectTab(id)} onKeyDown={(event) => onTabKey(event, index)} className={tab === id ? 'active' : ''}><Icon size={18} /><span>{name}</span>{id === 'vlans' && <span className="tab-count">{project.vlans.length}</span>}</button>)}</nav>
@@ -321,7 +339,8 @@ function App() {
       <footer><div className="footer-status"><HardDrive size={15} /><span>{storageStatus}</span>{storageStatus === 'Local save failed' && <span className="red-text">Export JSON to keep a backup.</span>}</div><label className="switch-label"><span>Save on this device</span><input type="checkbox" role="switch" checked={persist} onChange={(event) => togglePersist(event.target.checked)} /><span className="switch-track" /></label><span className="footer-version">SUBNET / VLAN PLANNER<span>v1.0</span></span></footer>
     </div>
     <div className="notification-region" aria-live="polite">{notification && <div className={`toast ${notification.tone}`}>{notification.tone === 'error' ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}<span>{notification.message}</span>{notification.undo && <Button icon={RotateCcw} onClick={() => { notification.undo(); setNotification(null); }}>Undo</Button>}<IconButton icon={X} label="Dismiss notification" onClick={() => setNotification(null)} /></div>}</div>
-    <dialog ref={confirmation} aria-labelledby="import-dialog-title" onCancel={() => setPendingImport(null)}><div className="dialog-heading"><FileJson size={24} /><h2 id="import-dialog-title">Replace current project?</h2></div><p>Importing <strong>{pendingImport?.name}</strong> replaces your current inputs, subnets, and VLANs. Export a backup first to keep your current project.</p><div className="dialog-actions"><Button onClick={() => { confirmation.current.close(); setPendingImport(null); }}>Cancel</Button><Button icon={Download} onClick={saveJSON}>Back up current</Button><Button className="primary" icon={Upload} onClick={() => { if (pendingImport) { setProject(pendingImport); notify(`Imported ${pendingImport.name}.`); } confirmation.current.close(); setPendingImport(null); }}>Replace project</Button></div></dialog>
+    <dialog ref={confirmation} aria-labelledby="import-dialog-title" onCancel={() => setPendingImport(null)}><div className="dialog-heading"><FileJson size={24} /><h2 id="import-dialog-title">{loadingExample ? 'Load example project?' : 'Replace current project?'}</h2></div><p>{loadingExample ? 'Loading the office network example' : <>Importing <strong>{pendingImport?.name}</strong></>} replaces your current inputs, subnets, and VLANs. Export a backup first to keep your current project.</p><div className="dialog-actions"><Button onClick={() => { confirmation.current.close(); setPendingImport(null); }}>Cancel</Button><Button icon={Download} onClick={saveJSON}>Back up current</Button><Button className="primary" icon={Upload} onClick={() => { if (pendingImport) { setProject(pendingImport); if (loadingExample) selectTab('calculator'); notify(loadingExample ? 'Office network example loaded.' : `Imported ${pendingImport.name}.`); } confirmation.current.close(); setPendingImport(null); }}>{loadingExample ? 'Load example' : 'Replace project'}</Button></div></dialog>
+    {tourStep !== null && <Tour step={tourStep} onStep={navigateTour} onFinish={finishTour} />}
   </>;
 }
 
