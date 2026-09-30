@@ -1,0 +1,25 @@
+{
+  "name": "subnet-vlan-planner",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "test": "node --test tests/*.test.js",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@fontsource/dm-sans": "^5.2.6",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "ipaddr.js": "^2.2.0",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0",
+    "vite-plugin-singlefile": "^2.3.0"
+  }
+}
