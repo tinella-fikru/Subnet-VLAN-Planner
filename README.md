@@ -4,6 +4,8 @@ A browser-only IPv4 planning workspace. No account, database, API, telemetry, or
 
 ## Open the App
 
+**[Open the live Subnet / VLAN Planner](https://tinella-fikru.github.io/Subnet-VLAN-Planner/)** in your browser. No download, installation, or account required.
+
 Open [dist/index.html](dist/index.html) in a modern browser after building. This is a **single, self-contained HTML file** with JavaScript, CSS, fonts, and Lucide icons embedded. It works directly from disk, offline, without a server. The generated `dist` folder is ignored by Git.
 
 The initial project includes example networks and VLANs; all fields are editable.
@@ -37,6 +39,12 @@ npm run dev
 ```
 
 Vite prints the local URL and chooses the next available port if its default port is busy. The development server serves static frontend assets only. To deploy, publish the generated HTML file to any static web host.
+
+## Deployment
+
+The live app is hosted on GitHub Pages. The [deployment workflow](.github/workflows/deploy-pages.yml) runs tests, builds the standalone HTML, and publishes `dist` whenever changes are pushed to `main`. It can also be run manually from the repository's Actions tab. Repository Settings > Pages must use **GitHub Actions** as the build source.
+
+GitHub Pages only serves static files. Project data and calculations remain in the visitor's browser. Local saved sessions are separate from sessions opened using the downloaded HTML file.
 
 ## Tools
 
